@@ -4,7 +4,7 @@
  *
  * Saat merilis perubahan kode, naikkan VERSION supaya perangkat mengambil versi baru.
  */
-const VERSION = 'bukukas-v2';
+const VERSION = 'bukukas-v3';
 const SHELL = [
   './',
   './index.html',
@@ -20,6 +20,8 @@ const SHELL = [
   './vendor/chartjs-plugin-datalabels.min.js',
   './icons/icon-192.png',
   './icons/icon-512.png',
+  './icons/logo.svg',
+  './icons/favicon-32.png',
 ];
 const FONT_HOSTS = ['fonts.googleapis.com', 'fonts.gstatic.com'];
 

@@ -9,8 +9,9 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Buku Kas">
 <link rel="manifest" href="manifest.webmanifest">
-<link rel="icon" href="icons/icon-192.png">
-<link rel="apple-touch-icon" href="icons/icon-192.png">
+<link rel="icon" href="icons/logo.svg" type="image/svg+xml">
+<link rel="icon" href="icons/favicon-32.png" sizes="32x32" type="image/png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&family=Cormorant+Garamond:ital,wght@0,600;1,600&family=Fraunces:ital,opsz,wght@0,9..144,500;0,9..144,600;1,9..144,500&display=swap" rel="stylesheet">
 <script src="vendor/chart.umd.min.js"></script>
@@ -884,6 +885,12 @@
     #toast-container, [data-layout="dock"] #toast-container { bottom: 84px; right: 12px; left: 12px; }
   }
 
+  /* Logo koin bertunas */
+  .sidebar-logo { background: none !important; box-shadow: none !important; border-radius: 0 !important; padding: 0; }
+  .sidebar-logo svg { width: 100%; height: 100%; display: block; overflow: visible; }
+  #loading-screen .sidebar-logo { width: 64px; height: 64px; }
+  #loading-screen .sidebar-brand { flex-direction: column; text-align: center; gap: 14px; }
+
   /* Tombol sinkron / Masuk (disisipkan oleh js/app-shell.js pada versi PWA) */
   .header-actions .bk-login-btn { background: var(--brand-primary); color: var(--on-primary); border-color: transparent; }
   [data-layout="dock"] .header-actions .bk-chip, [data-layout="dock"] .header-actions .bk-login-btn { border-radius: 999px; }
@@ -986,9 +993,21 @@
 </head>
 <body>
 
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="bk-mark" viewBox="0 0 120 120">
+    <circle cx="60" cy="62" r="40" fill="#E2A955"/>
+    <circle cx="60" cy="62" r="33" fill="none" stroke="#B9782E" stroke-width="2.4"/>
+    <path d="M60 88 C51 82 41 80 32 81 L32 56 C41 55 51 57 60 63 Z" fill="#FFF6E6"/>
+    <path d="M60 88 C69 82 79 80 88 81 L88 56 C79 55 69 57 60 63 Z" fill="#F3E3C6"/>
+    <path d="M60 64 C59 48 65 36 80 30 C81 45 74 57 60 64 Z" fill="#3E7A44"/>
+    <path d="M60 66 C56 56 49 50 39 48 C41 59 48 65 60 66 Z" fill="#B8562A"/>
+    <path d="M60 64 L60 88" stroke="#B9782E" stroke-width="2"/>
+  </symbol>
+</svg>
+
 <div id="loading-screen">
   <div class="sidebar-brand" style="border:none;">
-    <div class="sidebar-logo">BK</div>
+    <div class="sidebar-logo"><svg viewBox="18 20 84 84" aria-hidden="true"><use href="#bk-mark"/></svg></div>
     <div>
       <h1 style="font-size:22px;">Buku Kas</h1>
       <span>Financial Suite</span>
@@ -1210,7 +1229,7 @@
   <!-- SIDEBAR NAVIGATION COMPACT -->
   <aside class="sidebar">
     <div class="sidebar-brand">
-      <div class="sidebar-logo">BK</div>
+      <div class="sidebar-logo"><svg viewBox="18 20 84 84" aria-hidden="true"><use href="#bk-mark"/></svg></div>
       <div>
         <h1>Buku Kas</h1>
         <span>Earth Financial</span>
@@ -1235,7 +1254,7 @@
   <div class="main-wrapper">
     <header class="top-header">
       <div class="header-left">
-        <div class="header-brand"><div class="sidebar-logo">BK</div><b>Buku Kas</b></div>
+        <div class="header-brand"><div class="sidebar-logo"><svg viewBox="18 20 84 84" aria-hidden="true"><use href="#bk-mark"/></svg></div><b>Buku Kas</b></div>
         <div class="header-title-area">
           <h2 id="current-page-title">Expenditure dan Cashflow Overview</h2>
           <p id="current-page-subtitle">Welcome to Aurum's Personal Money Manager Dashboard</p>
