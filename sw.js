@@ -1,10 +1,10 @@
 /*
- * sw.js — service worker: menyimpan file aplikasi supaya bisa dibuka tanpa internet.
+ * sw.js â€” service worker: menyimpan file aplikasi supaya bisa dibuka tanpa internet.
  * Data keuangan TIDAK disimpan di sini (ada di IndexedDB). Panggilan ke Google tidak pernah di-cache.
  *
  * Saat merilis perubahan kode, naikkan VERSION supaya perangkat mengambil versi baru.
  */
-const VERSION = 'bukukas-v1';
+const VERSION = 'bukukas-v2';
 const SHELL = [
   './',
   './index.html',
