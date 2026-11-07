@@ -8,7 +8,7 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Buku Kas">
-<link rel="manifest" href="manifest.webmanifest">
+<link rel="manifest" href="manifest.webmanifest?v=4">
 <link rel="icon" href="icons/logo.svg" type="image/svg+xml">
 <link rel="icon" href="icons/favicon-32.png" sizes="32x32" type="image/png">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
@@ -885,6 +885,30 @@
     #toast-container, [data-layout="dock"] #toast-container { bottom: 84px; right: 12px; left: 12px; }
   }
 
+  /* Kolom form tidak boleh melebar melewati layar (input tanggal/jam di Android punya lebar minimum bawaan) */
+  .form-grid > *, .vault-form-grid > *, .form-group, .vault-group { min-width: 0; }
+  .form-group { position: relative; }
+  .form-group input, .form-group select, .vault-group input, .vault-group select { min-width: 0; max-width: 100%; }
+  .form-group input[type="date"], .form-group input[type="time"], .vault-group input[type="date"] { display: block; width: 100%; min-height: 38px; }
+  .quick-form-card, .card, .modal-card { min-width: 0; max-width: 100%; }
+  .dashboard-hero-grid > * { min-width: 0; }
+
+  /* Kolom foto struk: tombol pilih bawaan disembunyikan, diganti kotak yang bisa diketuk */
+  .form-group input[type="file"] { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
+  .paste-area {
+    display: flex; align-items: center; gap: 12px; text-align: left; padding: 12px 14px; margin-top: 2px;
+    border: 1.5px dashed var(--border-accent); border-radius: 12px; background: var(--bg-input);
+    transition: border-color .2s ease, background .2s ease;
+  }
+  .paste-area:hover { border-color: var(--brand-primary); background: var(--brand-primary-glow); }
+  .pa-icon { width: 38px; height: 38px; border-radius: 10px; display: grid; place-items: center; font-size: 18px; flex-shrink: 0; background: var(--brand-primary-glow); }
+  .pa-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+  .pa-text b { font-size: 12.5px; color: var(--text-primary); font-weight: 700; }
+  .pa-text small { font-size: 11px; color: var(--text-muted); }
+  [data-layout="ledger"] .paste-area { border-radius: 3px; }
+  @media (max-width: 680px) { .pa-hint-desktop { display: none; } }
+  @media (min-width: 681px) { .pa-hint-mobile { display: none; } }
+
   /* Logo koin bertunas */
   .sidebar-logo { background: none !important; box-shadow: none !important; border-radius: 0 !important; padding: 0; }
   .sidebar-logo svg { width: 100%; height: 100%; display: block; overflow: visible; }
@@ -1113,7 +1137,7 @@
           <label>Foto Struk / Bukti (Opsional)</label>
           <input type="file" id="edit-photo" accept="image/*" onchange="handlePhotoUpload(event, 'edit')">
           <div class="paste-area" id="edit-paste-area" onclick="document.getElementById('edit-photo').click()">
-            📋 Klik untuk pilih file, atau tekan Ctrl+V untuk paste gambar
+            <span class="pa-icon">📷</span><span class="pa-text"><b>Pilih foto struk</b><small class="pa-hint-mobile">Ketuk untuk ambil dari kamera atau galeri</small><small class="pa-hint-desktop">Klik untuk pilih file, atau tempel gambar dengan Ctrl+V</small></span>
           </div>
           <div style="position:relative; display:inline-block; margin-top:8px;">
             <img id="edit-photo-preview" alt="Pratinjau foto" style="max-width:100%; max-height:120px; border-radius:8px; display:none;">
@@ -1425,7 +1449,7 @@
                   <label>Foto Struk / Bukti (Opsional)</label>
                   <input type="file" id="input-photo" accept="image/*" onchange="handlePhotoUpload(event, 'input')">
                   <div class="paste-area" id="input-paste-area" onclick="document.getElementById('input-photo').click()">
-                    📋 Klik untuk pilih file, atau tekan Ctrl+V untuk paste gambar
+                    <span class="pa-icon">📷</span><span class="pa-text"><b>Pilih foto struk</b><small class="pa-hint-mobile">Ketuk untuk ambil dari kamera atau galeri</small><small class="pa-hint-desktop">Klik untuk pilih file, atau tempel gambar dengan Ctrl+V</small></span>
                   </div>
                   <div style="position:relative; display:inline-block; margin-top:8px;">
                     <img id="input-photo-preview" alt="Pratinjau foto" style="max-width:100%; max-height:120px; border-radius:8px; display:none;">

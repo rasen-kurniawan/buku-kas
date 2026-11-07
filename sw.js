@@ -1,10 +1,10 @@
 /*
- * sw.js â€” service worker: menyimpan file aplikasi supaya bisa dibuka tanpa internet.
+ * sw.js - service worker: menyimpan file aplikasi supaya bisa dibuka tanpa internet.
  * Data keuangan TIDAK disimpan di sini (ada di IndexedDB). Panggilan ke Google tidak pernah di-cache.
  *
  * Saat merilis perubahan kode, naikkan VERSION supaya perangkat mengambil versi baru.
  */
-const VERSION = 'bukukas-v3';
+const VERSION = 'bukukas-v5';
 const SHELL = [
   './',
   './index.html',
@@ -18,15 +18,19 @@ const SHELL = [
   './js/app-shell.js',
   './vendor/chart.umd.min.js',
   './vendor/chartjs-plugin-datalabels.min.js',
-  './icons/icon-192.png',
-  './icons/icon-512.png',
+  './icons/bk-icon-192.png',
+  './icons/bk-icon-512.png',
+  './icons/bk-icon-maskable-512.png',
   './icons/logo.svg',
   './icons/favicon-32.png',
 ];
 const FONT_HOSTS = ['fonts.googleapis.com', 'fonts.gstatic.com'];
 
 self.addEventListener('install', event => {
-  event.waitUntil(caches.open(VERSION).then(c => c.addAll(SHELL)).then(() => self.skipWaiting()));
+  // cache: 'reload' = selalu ambil dari server, bukan dari cache HTTP browser yang mungkin masih versi lama.
+  event.waitUntil(caches.open(VERSION)
+    .then(c => c.addAll(SHELL.map(u => new Request(u, { cache: 'reload' }))))
+    .then(() => self.skipWaiting()));
 });
 
 self.addEventListener('activate', event => {
@@ -54,6 +58,21 @@ self.addEventListener('fetch', event => {
 
   // Selain file aplikasi sendiri (mis. Google login/Drive), biarkan lewat tanpa cache.
   if (url.origin !== self.location.origin) return;
+
+  // Manifest & ikon: ambil versi terbaru dari server dulu (dipakai saat install aplikasi), cache hanya cadangan offline.
+  if (url.pathname.endsWith('.webmanifest') || url.pathname.includes('/icons/')) {
+    event.respondWith((async () => {
+      const cache = await caches.open(VERSION);
+      try {
+        const res = await fetch(req, { cache: 'no-cache' });
+        if (res.ok) cache.put(req, res.clone());
+        return res;
+      } catch (e) {
+        return (await cache.match(req, { ignoreSearch: true })) || new Response('', { status: 504 });
+      }
+    })());
+    return;
+  }
 
   // File aplikasi: pakai cache dulu supaya cepat & bisa offline, perbarui diam-diam di belakang.
   event.respondWith((async () => {
