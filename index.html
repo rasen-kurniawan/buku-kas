@@ -2260,16 +2260,41 @@
     if (prefix === 'edit') editRemoveFoto = false;
   }
 
+  /* Foto yang dipilih langsung disalin ke memori. Di Android, file dari galeri/kamera sering
+     hanya bisa dibaca sesaat setelah dipilih; saat tombol Simpan ditekan izinnya bisa sudah hilang. */
+  const pickedPhoto = { input: null, edit: null };
+
+  async function takePhoto(prefix, file) {
+    try {
+      const buf = await file.arrayBuffer();
+      const copy = new File([buf], file.name || 'foto.jpg', { type: file.type || 'image/jpeg' });
+      pickedPhoto[prefix] = copy;
+      readFileToPreview(prefix, copy);
+      return true;
+    } catch (e) {
+      pickedPhoto[prefix] = null;
+      const input = $(`${prefix}-photo`);
+      if (input) input.value = '';
+      showToast('Foto tidak bisa dibaca dari perangkat. Coba pilih lagi, atau simpan dulu fotonya ke galeri.');
+      return false;
+    }
+  }
+
+  function getPickedPhoto(prefix) {
+    return pickedPhoto[prefix] || null;
+  }
+
   function handlePhotoUpload(event, prefix) {
     const file = event.target.files[0];
     if (!file) return;
-    readFileToPreview(prefix, file);
+    takePhoto(prefix, file);
   }
 
   function clearPhoto(prefix) {
     const input = $(`${prefix}-photo`);
     const img = $(`${prefix}-photo-preview`);
     const btn = $(`${prefix}-photo-clear`);
+    pickedPhoto[prefix] = null;
     if (input) input.value = '';
     if (img) { img.removeAttribute('src'); img.style.display = 'none'; }
     if (btn) btn.style.display = 'none';
@@ -2293,12 +2318,8 @@
       if (!item.type.startsWith('image/')) continue;
       const file = item.getAsFile();
       if (!file) continue;
-      const dt = new DataTransfer();
-      dt.items.add(file);
-      $(`${prefix}-photo`).files = dt.files;
-      readFileToPreview(prefix, file);
       event.preventDefault();
-      showToast('Gambar dari clipboard ditempel.', 'success');
+      takePhoto(prefix, file).then(ok => { if (ok) showToast('Gambar dari clipboard ditempel.', 'success'); });
       break;
     }
   });
@@ -2394,7 +2415,7 @@
         fd.append('is_utama', type === 'EXPENSE' ? String($('input-is-utama').checked) : 'true');
         fd.append('jumlah', String(jumlah));
         fd.append('deskripsi', $('input-desc').value);
-        const photo = $('input-photo').files[0];
+        const photo = getPickedPhoto('input');
         if (photo) fd.append('foto', photo);
         await api('/api/transaksi', { method: 'POST', body: fd });
         showToast('Catatan transaksi berhasil disimpan!', 'success');
@@ -2492,6 +2513,7 @@ Aksi ini tidak bisa dibatalkan.`;
     $('edit-amount').value = numToInput(item.amount);
     $('edit-desc').value = item.desc;
     $('edit-photo').value = '';
+    pickedPhoto.edit = null;
 
     const isTransfer = item.type === 'TRANSFER_OUT' || item.type === 'TRANSFER_IN';
     const typeSel = $('edit-type');
@@ -2607,7 +2629,7 @@ Aksi ini tidak bisa dibatalkan.`;
         fd.append('is_utama', type === 'EXPENSE' ? String($('edit-is-utama').checked) : 'true');
         fd.append('jumlah', String(jumlah));
         fd.append('deskripsi', $('edit-desc').value);
-        const photo = $('edit-photo').files[0];
+        const photo = getPickedPhoto('edit');
         if (photo) fd.append('foto', photo);
         else if (editRemoveFoto) fd.append('hapus_foto', 'true');
         await api(`/api/transaksi/${targetEditId}`, { method: 'PUT', body: fd });

@@ -81,11 +81,13 @@
         applied.push(...got);
         seen[f.name] = f.modifiedTime;
       }
+      await this.store.setMeta('seen', seen);
       if (applied.length) {
         this.backend.applyRemote(applied);
         summary.masuk = applied.length;
+        // Segarkan tampilan SEKARANG, jangan tunggu foto-foto selesai diunduh.
+        try { this.onRemoteChange(applied); } catch (e) { console.error(e); }
       }
-      await this.store.setMeta('seen', seen);
 
       /* 2. dorong perubahan lokal */
       if (await this.store.getMeta('mineDirty', false)) {
@@ -115,27 +117,40 @@
       }
       await this.store.setMeta('photoDeletes', stillDeleting);
 
-      for (const key of await this.store.pendingUploads()) {
+      // Satu foto yang gagal tidak boleh menggagalkan seluruh sinkron; coba lagi di sinkron berikutnya.
+      // Hanya masalah login (DriveAuthError) yang menghentikan proses.
+      const tolerate = e => { if (e instanceof BKDrive.DriveAuthError) throw e; summary.fotoGagal++; console.warn('Foto dilewati:', e); };
+      summary.fotoGagal = 0;
+
+      const toUpload = await this.store.pendingUploads();
+      for (let i = 0; i < toUpload.length; i++) {
+        const key = toUpload[i];
         const name = FOTO_PREFIX + key;
-        if (!byName.has(name)) {
-          const b = await this.store.getBlob(key);
-          if (!b) continue;
-          const up = await this.drive.upload(name, b.blob, null);
-          byName.set(name, up);
-          summary.fotoNaik++;
-        }
-        await this.store.markUploaded(key);
+        this.onStatus({ state: 'syncing', detail: `Mengunggah foto ${i + 1}/${toUpload.length}` });
+        try {
+          if (!byName.has(name)) {
+            const b = await this.store.getBlob(key);
+            if (!b) { await this.store.markUploaded(key); continue; }
+            const up = await this.drive.upload(name, b.blob, null);
+            byName.set(name, up);
+            summary.fotoNaik++;
+          }
+          await this.store.markUploaded(key);
+        } catch (e) { tolerate(e); }
       }
 
       const needed = new Set(this.backend.live('transaksi').map(t => t.foto).filter(Boolean));
       const local = new Set(await this.store.blobKeys());
-      for (const key of needed) {
-        if (local.has(key)) continue;
-        const f = byName.get(FOTO_PREFIX + key);
-        if (!f) continue; // belum diunggah perangkat asalnya; coba lagi nanti
-        const blob = await this.drive.downloadBlob(f.id);
-        await this.store.putBlob(key, blob, true);
-        summary.fotoTurun++;
+      // belum diunggah perangkat asalnya -> lewati, coba lagi nanti
+      const toDownload = Array.from(needed).filter(key => !local.has(key) && byName.has(FOTO_PREFIX + key));
+      for (let i = 0; i < toDownload.length; i++) {
+        const key = toDownload[i];
+        this.onStatus({ state: 'syncing', detail: `Mengunduh foto ${i + 1}/${toDownload.length}` });
+        try {
+          const blob = await this.drive.downloadBlob(byName.get(FOTO_PREFIX + key).id);
+          await this.store.putBlob(key, blob, true);
+          summary.fotoTurun++;
+        } catch (e) { tolerate(e); }
       }
 
       // Bersihkan salinan lokal foto yang sudah tidak dipakai transaksi mana pun (dan sudah aman di Drive).
@@ -145,7 +160,6 @@
         if (b && b.up) await this.store.deleteBlob(key);
       }
 
-      if (applied.length) this.onRemoteChange(applied);
       return summary;
     }
   }

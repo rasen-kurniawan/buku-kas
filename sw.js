@@ -4,7 +4,7 @@
  *
  * Saat merilis perubahan kode, naikkan VERSION supaya perangkat mengambil versi baru.
  */
-const VERSION = 'bukukas-v7';
+const VERSION = 'bukukas-v9';
 const SHELL = [
   './',
   './index.html',

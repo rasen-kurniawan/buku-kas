@@ -18,12 +18,17 @@
     async _fetch(url, opts = {}) {
       const token = await this.getToken();
       if (!token) throw new DriveAuthError('Perlu login ulang untuk sinkron.');
+      // Batas waktu supaya sinkron tidak "muter terus" kalau koneksi menggantung.
+      const ctrl = new AbortController();
+      const timer = setTimeout(() => ctrl.abort(), opts.method && opts.method !== 'GET' ? 120000 : 60000);
       let res;
       try {
-        res = await fetch(url, { ...opts, headers: { ...(opts.headers || {}), Authorization: 'Bearer ' + token } });
+        res = await fetch(url, { ...opts, signal: ctrl.signal, headers: { ...(opts.headers || {}), Authorization: 'Bearer ' + token } });
       } catch (e) {
-        throw new DriveError('Tidak ada koneksi internet.');
+        clearTimeout(timer);
+        throw new DriveError(ctrl.signal.aborted ? 'Koneksi ke Google Drive terlalu lama (timeout).' : 'Tidak ada koneksi internet.');
       }
+      // Timer sengaja tidak dihentikan di sini: kalau isi file (foto) macet saat diunduh, tetap dibatalkan.
       if (res.status === 401) throw new DriveAuthError('Sesi Google kedaluwarsa, perlu login ulang.');
       if (!res.ok) {
         let msg = '';

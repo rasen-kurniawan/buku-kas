@@ -129,6 +129,7 @@
         if (r.keluar) parts.push('perubahan lokal terkirim');
         if (r.fotoNaik) parts.push(`${r.fotoNaik} foto terunggah`);
         if (r.fotoTurun) parts.push(`${r.fotoTurun} foto terunduh`);
+        if (r.fotoGagal) parts.push(`${r.fotoGagal} foto gagal (dicoba lagi nanti)`);
         toast(parts.length ? 'Sinkron selesai: ' + parts.join(', ') + '.' : 'Sudah tersinkron, tidak ada perubahan.', 'success');
       }
     } catch (e) {
@@ -243,7 +244,7 @@
     const unsynced = dirty || pendingFoto > 0;
     let icon = '☁️', text = 'Tersinkron', cls = 'ok';
     switch (syncState.state) {
-      case 'syncing': icon = '🔄'; text = 'Menyinkron…'; cls = 'busy'; break;
+      case 'syncing': icon = '🔄'; text = syncState.detail || 'Menyinkron…'; cls = 'busy'; break;
       case 'auth': icon = '🔑'; text = 'Ketuk untuk sinkron'; cls = 'warn'; break;
       case 'error': {
         const offline = !navigator.onLine || /koneksi/i.test(String(syncState.error && syncState.error.message));
