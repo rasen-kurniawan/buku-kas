@@ -4,7 +4,7 @@
  * Object store:
  *   records : tampilan gabungan semua data   { k, c, id, v, u, d, x }
  *   mine    : versi terakhir yang DITULIS perangkat ini (diunggah ke Drive)
- *   blobs   : foto struk                      { key, blob, up }
+ *   blobs   : foto struk                      { key, data (ArrayBuffer), type, size, up }
  *   meta    : pengaturan perangkat (deviceId, status sinkron, dll.)
  *
  *   k = "<koleksi>|<id>", c = koleksi, v = isi data, u = waktu ubah (ms),
@@ -113,30 +113,63 @@
       await txDone(tx);
     }
 
-    /* ---------- blobs (foto) ---------- */
+    /* ---------- blobs (foto) ----------
+     * Foto disimpan sebagai ArrayBuffer (bytes), BUKAN objek Blob/File.
+     * Chrome Android kadang gagal menyimpan Blob dari kamera/galeri ke IndexedDB
+     * ("Failed to write blobs / Invalid blob"); bytes biasa selalu bisa disimpan.
+     * Data lama yang masih berbentuk { blob } tetap terbaca.
+     * Daftar foto yang belum terunggah disimpan di meta 'pendingFoto' supaya tidak perlu
+     * memuat seluruh isi foto hanya untuk menghitungnya. */
+    async _pendingSet() {
+      let list = await this.getMeta('pendingFoto');
+      if (!Array.isArray(list)) {
+        const tx = this.db.transaction('blobs');
+        const all = await reqP(tx.objectStore('blobs').getAll());
+        list = all.filter(b => !b.up).map(b => b.key);
+        await this.setMeta('pendingFoto', list);
+      }
+      return new Set(list);
+    }
+    async _setPending(key, pending) {
+      const set = await this._pendingSet();
+      const had = set.has(key);
+      if (pending && !had) set.add(key);
+      else if (!pending && had) set.delete(key);
+      else return;
+      await this.setMeta('pendingFoto', Array.from(set));
+    }
+
     async putBlob(key, blob, uploaded = false) {
+      let data;
+      try {
+        data = await blob.arrayBuffer();
+      } catch (e) {
+        throw new Error('Foto tidak bisa dibaca dari perangkat. Coba pilih ulang fotonya (atau ambil dari galeri, bukan langsung dari aplikasi lain).');
+      }
       const tx = this.db.transaction('blobs', 'readwrite');
-      tx.objectStore('blobs').put({ key, blob, up: uploaded });
+      tx.objectStore('blobs').put({ key, data, type: blob.type || 'application/octet-stream', size: data.byteLength, up: uploaded });
       await txDone(tx);
+      await this._setPending(key, !uploaded);
     }
     async getBlob(key) {
       const tx = this.db.transaction('blobs');
       const v = await reqP(tx.objectStore('blobs').get(key));
-      return v || null;
+      if (!v) return null;
+      if (v.data) return { key: v.key, blob: new Blob([v.data], { type: v.type }), up: v.up };
+      return v;
     }
     async deleteBlob(key) {
       const tx = this.db.transaction('blobs', 'readwrite');
       tx.objectStore('blobs').delete(key);
       await txDone(tx);
+      await this._setPending(key, false);
     }
     async blobKeys() {
       const tx = this.db.transaction('blobs');
       return reqP(tx.objectStore('blobs').getAllKeys());
     }
     async pendingUploads() {
-      const tx = this.db.transaction('blobs');
-      const all = await reqP(tx.objectStore('blobs').getAll());
-      return all.filter(b => !b.up).map(b => b.key);
+      return Array.from(await this._pendingSet());
     }
     async markUploaded(key) {
       const tx = this.db.transaction('blobs', 'readwrite');
@@ -144,6 +177,7 @@
       const v = await reqP(st.get(key));
       if (v) { v.up = true; st.put(v); }
       await txDone(tx);
+      await this._setPending(key, false);
     }
   }
 
